@@ -4,16 +4,35 @@ export default {
   async fetch(request, env, ctx) {
     let id = env.BROWSER.idFromName('browser');
 
+	const task = {website: 'https://example.com'}
+
     let obj = env.BROWSER.get(id);
 
     let resp = await obj.fetch(request.url, {
       method: 'POST',
-      body: JSON.stringify({
-        website: 'https://example.com',
-      }),
+      body: JSON.stringify(task),
     });
-    let response_data = await resp.text();
-    return new Response(response_data);
+    let response_data_one_task = await resp.json();
+
+	let id_multiple = env.BROWSER.idFromName('browser');
+
+    let obj_multiple = env.BROWSER.get(id_multiple);
+
+	let tasks = [];
+	for(let i = 0; i < 100; i++) {
+		tasks.push(task);
+	}
+
+    let resp_multiple = await obj_multiple.fetch(request.url, {
+      method: 'POST',
+      body: JSON.stringify(tasks),
+    });
+    let response_data_multiple = await resp_multiple.json();
+
+    return new Response(JSON.stringify({
+		one_task: response_data_one_task,
+		mutliple_tasks: response_data_multiple
+	}));
   },
 };
 
@@ -50,32 +69,17 @@ export class Browser {
       const TEN_SECONDS = 10 * 1000;
       this.storage.setAlarm(Date.now() + TEN_SECONDS);
     }
+	
+	var responseData = {}
 
-    var responseData = {
-      error: false,
-    };
-
-    try {
-      // open new page
-      const page = await this.browser.newPage();
-
-      // perform tasks
-      var startTime = new Date();
-      await page.goto(requestData.website);
-      responseData['metrics'] = await page.metrics();
-      await page.waitForNetworkIdle({
-        idleTime: 2,
-      });
-      responseData['content'] = await page.content();
-      var endTime = new Date();
-      responseData['execution_time'] = endTime - startTime;
-
-      // close page
-      page.close();
-    } catch (e) {
-      console.log(`Browser DO: puppeteer failed with error: ${e}`);
-      responseData['error'] = true;
-    }
+	if(typeof requestData === 'object' && !Array.isArray(requestData)) {
+		responseData = await this.performTask(requestData);
+	} else if(Array.isArray(requestData)) {
+		var startTime = new Date();
+		responseData['result'] = await Promise.all(requestData.map(this.performTask.bind(this)));
+		var endTime = new Date();
+		responseData['execution_time'] = endTime - startTime;
+	}
 
     // return data to worker
     return new Response(JSON.stringify(responseData));
@@ -89,5 +93,34 @@ export class Browser {
       console.log(`Browser DO: has been kept alive for ${this.keptAliveInSeconds} seconds. Extending lifespan.`);
       this.storage.setAlarm(Date.now() + 10 * 1000);
     } else console.log(`Browser DO: cxceeded life of ${KEEP_BROWSER_ALIVE_IN_SECONDS}. Browser DO will be shut down in 10 seconds.`);
+  }
+
+  async performTask(requestData) {
+	let responseData = {
+		error: false,
+	};
+
+	try {
+		// open new page
+		const page = await this.browser.newPage();
+
+		// perform tasks
+		var startTime = new Date();
+		await page.goto(requestData.website);
+		responseData['metrics'] = await page.metrics();
+		await page.waitForNetworkIdle({
+			idleTime: 2,
+		});
+		responseData['content'] = await page.content();
+		var endTime = new Date();
+		responseData['execution_time'] = endTime - startTime;
+
+		// close page
+		page.close();
+	} catch (e) {
+		console.log(`Browser DO: puppeteer failed with error: ${e}`);
+		responseData['error'] = true;
+	}
+	return responseData
   }
 }
