@@ -14,12 +14,12 @@ export default {
     });
     let response_data_one_task = await resp.json();
 
-	let id_multiple = env.BROWSER.idFromName('browser');
+	let id_multiple = env.BROWSER.idFromName('browser-multiple');
 
     let obj_multiple = env.BROWSER.get(id_multiple);
 
 	let tasks = [];
-	for(let i = 0; i < 100; i++) {
+	for(let i = 0; i < 10; i++) {
 		tasks.push(task);
 	}
 
