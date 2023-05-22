@@ -1,4 +1,4 @@
-name = "render-api-coalias-test"
+name = "cloudflare-render-api-template"
 main = "src/worker.js"
 compatibility_date = "2023-05-22"
 compatibility_flags = ["durable_object_alarms"]
