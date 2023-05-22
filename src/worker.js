@@ -103,6 +103,8 @@ export class Browser {
 		error: false,
 	};
 
+	console.log(`Browser DO: Executing task`);
+
 	try {
 		// open new page
 		const page = await this.browser.newPage();
