@@ -1,0 +1,13 @@
+{
+  "name": "render-api-coalias-test",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler publish",
+    "start": "wrangler dev"
+  },
+  "devDependencies": {
+    "@cloudflare/puppeteer": "^0.0.2-alpha",
+    "wrangler": "^3.0.0"
+  }
+}

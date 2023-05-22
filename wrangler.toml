@@ -1,0 +1,11 @@
+name = "render-api-coalias-test"
+main = "src/worker.js"
+compatibility_date = "2023-05-22"
+compatibility_flags = ["durable_object_alarms"]
+
+browser = { binding = "MYBROWSER", type = "browser" }
+
+[durable_objects]
+bindings = [
+  { name = "BROWSER", class_name = "Browser" } # Binding to our DurableObjectExample class
+]
