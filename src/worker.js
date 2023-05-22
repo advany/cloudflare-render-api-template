@@ -72,11 +72,14 @@ export class Browser {
 	
 	var responseData = {}
 
+	// execute single task
 	if(typeof requestData === 'object' && !Array.isArray(requestData)) {
 		responseData = await this.performTask(requestData);
+
+	// execute multiple tasks
 	} else if(Array.isArray(requestData)) {
 		var startTime = new Date();
-		responseData['result'] = await Promise.all(requestData.map(this.performTask.bind(this)));
+		responseData['results'] = await Promise.all(requestData.map(this.performTask.bind(this)));
 		var endTime = new Date();
 		responseData['execution_time'] = endTime - startTime;
 	}
