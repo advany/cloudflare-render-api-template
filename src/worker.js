@@ -4,7 +4,7 @@ export default {
   async fetch(request, env, ctx) {
     let id = env.BROWSER.idFromName('browser');
 
-	const task = {website: 'https://example.com'}
+    const task = { website: 'https://example.com' }
 
     let obj = env.BROWSER.get(id);
 
@@ -14,14 +14,14 @@ export default {
     });
     let response_data_one_task = await resp.json();
 
-	let id_multiple = env.BROWSER.idFromName('browser-multiple');
+    let id_multiple = env.BROWSER.idFromName('browser-multiple');
 
     let obj_multiple = env.BROWSER.get(id_multiple);
 
-	let tasks = [];
-	for(let i = 0; i < 10; i++) {
-		tasks.push(task);
-	}
+    let tasks = [];
+    for (let i = 0; i < 10; i++) {
+      tasks.push(task);
+    }
 
     let resp_multiple = await obj_multiple.fetch(request.url, {
       method: 'POST',
@@ -30,9 +30,9 @@ export default {
     let response_data_multiple = await resp_multiple.json();
 
     return new Response(JSON.stringify({
-		one_task: response_data_one_task,
-		mutliple_tasks: response_data_multiple
-	}));
+      one_task: response_data_one_task,
+      mutliple_tasks: response_data_multiple
+    }));
   },
 };
 
@@ -62,27 +62,30 @@ export class Browser {
     // Reset keptAlive after each call to the Distributed Object (DO) from a worker.
     this.keptAliveInSeconds = 0;
 
-    // set the first alarm
+    var responseData = {}
+
+    // execute single task
+    if (typeof requestData === 'object' && !Array.isArray(requestData)) {
+      responseData = await this.performTask(requestData);
+
+      // execute multiple tasks
+    } else if (Array.isArray(requestData)) {
+      var startTime = new Date();
+      responseData['results'] = await Promise.all(requestData.map(this.performTask.bind(this)));
+      var endTime = new Date();
+      responseData['execution_time'] = endTime - startTime;
+    }
+
+    // Reset keptAlive after performing tasks to the Distributed Object (DO) from a worker.
+    this.keptAliveInSeconds = 0;
+
+    // set the first alarm to keep DO alive
     let currentAlarm = await this.storage.getAlarm();
     if (currentAlarm == null) {
       console.log(`Browser DO: setting alarm`);
       const TEN_SECONDS = 10 * 1000;
       this.storage.setAlarm(Date.now() + TEN_SECONDS);
     }
-	
-	var responseData = {}
-
-	// execute single task
-	if(typeof requestData === 'object' && !Array.isArray(requestData)) {
-		responseData = await this.performTask(requestData);
-
-	// execute multiple tasks
-	} else if(Array.isArray(requestData)) {
-		var startTime = new Date();
-		responseData['results'] = await Promise.all(requestData.map(this.performTask.bind(this)));
-		var endTime = new Date();
-		responseData['execution_time'] = endTime - startTime;
-	}
 
     // return data to worker
     return new Response(JSON.stringify(responseData));
@@ -99,33 +102,33 @@ export class Browser {
   }
 
   async performTask(requestData) {
-	let responseData = {
-		error: false,
-	};
+    let responseData = {
+      error: false,
+    };
 
-	console.log(`Browser DO: Executing task`);
+    console.log(`Browser DO: Executing task`);
 
-	try {
-		// open new page
-		const page = await this.browser.newPage();
+    try {
+      // open new page
+      const page = await this.browser.newPage();
 
-		// perform tasks
-		var startTime = new Date();
-		await page.goto(requestData.website);
-		responseData['metrics'] = await page.metrics();
-		await page.waitForNetworkIdle({
-			idleTime: 2,
-		});
-		responseData['content'] = await page.content();
-		var endTime = new Date();
-		responseData['execution_time'] = endTime - startTime;
+      // perform tasks
+      var startTime = new Date();
+      await page.goto(requestData.website);
+      responseData['metrics'] = await page.metrics();
+      await page.waitForNetworkIdle({
+        idleTime: 2,
+      });
+      responseData['content'] = await page.content();
+      var endTime = new Date();
+      responseData['execution_time'] = endTime - startTime;
 
-		// close page
-		page.close();
-	} catch (e) {
-		console.log(`Browser DO: puppeteer failed with error: ${e}`);
-		responseData['error'] = true;
-	}
-	return responseData
+      // close page
+      page.close();
+    } catch (e) {
+      console.log(`Browser DO: puppeteer failed with error: ${e}`);
+      responseData['error'] = true;
+    }
+    return responseData
   }
 }
